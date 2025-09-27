@@ -1,52 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import './Home.css';
+// src/pages/Home.jsx
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getMe } from "../../services/userService";
+import { isAuthenticated, logout } from "../../services/authService";
+import "./Home.css";
 
-function Home() {
+export default function Home() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        navigate('/login');
-        return;
-      }
+    // Chặn nếu chưa đăng nhập
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
 
+    (async () => {
       try {
-        const response = await axios.get('http://localhost:8000/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        setUserData(response.data);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError('Failed to load user data');
-        
-        if (error.response?.status === 401 || error.response?.status === 404) {
-          localStorage.removeItem('token');
-          navigate('/login');
+        const me = await getMe();           // ⬅️ gọi qua service
+        setUserData(me);
+        setError("");
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        const status = err?.response?.status;
+        // Hết hạn/invalid token → logout và quay về login
+        if (status === 401 || status === 404) {
+          logout();
+          navigate("/login");
+          return;
         }
+        setError("Không thể tải thông tin người dùng.");
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchUserData();
+    })();
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+    logout();
+    navigate("/login");
   };
 
   if (error) {
@@ -71,7 +66,7 @@ function Home() {
         <h1>iBanking Dashboard</h1>
         <button onClick={handleLogout} className="logout-btn">Đăng xuất</button>
       </nav>
-      
+
       <div className="user-info">
         <h2>Thông tin người dùng</h2>
         {userData && (
@@ -79,12 +74,10 @@ function Home() {
             <p><strong>Tên đăng nhập:</strong> {userData.username}</p>
             <p><strong>Email:</strong> {userData.email}</p>
             <p><strong>Họ tên:</strong> {userData.name}</p>
-            <p><strong>Số dư:</strong> {userData.balance?.toLocaleString()} VND</p>
+            <p><strong>Số dư:</strong> {Number(userData.balance || 0).toLocaleString()} VND</p>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-export default Home;

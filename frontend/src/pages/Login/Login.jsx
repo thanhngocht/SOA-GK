@@ -1,49 +1,34 @@
-import React, { use, useState } from 'react';
-import axios from 'axios';
-import './Login.css';
-import { useNavigate } from 'react-router-dom';
-import tdtLogo from '../../assets/tdt_logo.png';
-import EyeOpen from '../../assets/eye_open.svg';
-import EyeClose from '../../assets/eye_close.svg';
+// src/pages/LoginPage.jsx
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../../services/authService";     // ⬅️ dùng service
+import "./Login.css";
+import tdtLogo from "../../assets/tdt_logo.png";
+import EyeOpen from "../../assets/eye_open.svg";
+import EyeClose from "../../assets/eye_close.svg";
 
-function Login() {
+export default function Login() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!username || !password) {
-      alert('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu');
+      alert("Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu");
       return;
     }
-
     setLoading(true);
     try {
-      const { data } = await axios.post('http://localhost:8000/api/auth/login', {
-        username,
-        password,
-      });
-
-      // Lưu token
-      localStorage.setItem('token', data.access_token);
-      navigate('/home');
-      // (tuỳ chọn) set mặc định header cho axios:
-      // axios.defaults.headers.common.Authorization = `Bearer ${data.access_token}`;
-
+      const data = await login({ username, password });  // ⬅️ gọi service
       alert(`Xin chào ${data.username}`);
-      console.log('Đăng nhập thành công:', data);
-
-      // (tuỳ chọn) chuyển trang:
-      // navigate('/home');
-
+      navigate("/home");
     } catch (error) {
-      console.error('Lỗi:', error);
-      const msg = error?.response?.data?.detail || 'Có lỗi xảy ra khi đăng nhập';
+      const msg = error?.response?.data?.detail || "Có lỗi xảy ra khi đăng nhập";
       alert(msg);
+      console.error("Lỗi:", error);
     } finally {
       setLoading(false);
     }
@@ -117,4 +102,3 @@ function Login() {
   );
 }
 
-export default Login;

@@ -1,6 +1,6 @@
+# schemas.py
 from pydantic import BaseModel, EmailStr
-from typing import Optional
-#kiểm soát validate
+
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -11,8 +11,12 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-class MeResponse(BaseModel):
+class SignupRequest(BaseModel):
     username: str
     email: EmailStr
     name: str
-    balance: float = 0.0
+    password: str
+
+class SignupResponse(BaseModel):
+    message: str
+    username: str

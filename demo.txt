@@ -2,9 +2,9 @@ python -m venv .venv
 source .venv/Scripts/activate
 Backend:
 cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-
+uvicorn auth.main:app --reload --port 8001
+uvicorn users.main:app --reload --port 8002
+uvicorn gateway.main:app --reload --port 8000
 
 
 Frontend:
@@ -13,3 +13,4 @@ npm install
 npm install react react-dom react-router-dom
 npm install axios
 npm run dev
+
