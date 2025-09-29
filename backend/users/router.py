@@ -1,32 +1,77 @@
-# router.py
-from fastapi import APIRouter, HTTPException, Depends
-from users.schemas import UserCreate, UserPublic
-from users.repo import create_user, find_user_by_username
+# users/router.py
+from fastapi import APIRouter, HTTPException, Depends, Query
+from users.schemas import UserCreate, UserPublic, UserUpdate, BalanceReq, UserList
 from users.utils import get_current_user
-from users.db import get_supabase_client
+
+from users.service import (
+    create_profile_service,
+    get_me_service,
+    list_users_service,
+    update_profile_service,
+    credit_balance_service,
+    debit_balance_service,
+    delete_user_service,
+)
 
 router = APIRouter(prefix="/user", tags=["users"])
 
 @router.post("/create", response_model=UserPublic)
 def create_profile(body: UserCreate):
-    return create_user(body.username, body.email, body.name)
+    return create_profile_service(
+        username=body.username,
+        email=body.email,
+        name=body.name,
+        phone=body.phone,
+        gender=body.gender,
+    )
 
 @router.get("/me", response_model=UserPublic)
 def get_me(claims: dict = Depends(get_current_user)):
-    username = claims["sub"]
-    user = find_user_by_username(username)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return get_me_service(username_sub=claims["sub"])
 
-# Debug: liệt kê tất cả user (cần token hợp lệ)
-@router.get("/all")
-def list_users(_: dict = Depends(get_current_user)):
-    res = (
-        get_supabase_client()
-        .schema("user_svc")
-        .table("users")
-        .select("*")
-        .execute()
+@router.get("/all", response_model=UserList)
+def list_users(
+    _: dict = Depends(get_current_user),
+    limit: int = Query(100, ge=0, le=1000),
+    offset: int = Query(0, ge=0),
+):
+    items = list_users_service(limit=limit, offset=offset)
+    return {"items": items, "limit": limit, "offset": offset}
+
+
+# # router.py
+# @router.get("/all-public", response_model=UserList)
+# def list_users_public(
+#     limit: int = Query(100, ge=0, le=1000),
+#     offset: int = Query(0, ge=0),
+# ):
+#     rows = list_users_service(limit=limit, offset=offset)
+#     items = [
+#         {"username": r["username"], "name": r["name"], "created_at": r.get("created_at")}
+#         for r in rows
+#     ]
+#     return {"items": items, "limit": limit, "offset": offset}
+
+
+@router.put("/update", response_model=UserPublic)
+def update_me(body: UserUpdate, claims: dict = Depends(get_current_user)):
+    return update_profile_service(
+        username=claims["sub"],
+        email=body.email,
+        name=body.name,
+        phone=body.phone,
+        gender=body.gender,
     )
-    return res.data or []
+
+@router.post("/balance/credit", response_model=UserPublic)
+def credit_balance(body: BalanceReq, claims: dict = Depends(get_current_user)):
+    return credit_balance_service(username=claims["sub"], amount=body.amount)
+
+@router.post("/balance/debit", response_model=UserPublic)
+def debit_balance(body: BalanceReq, claims: dict = Depends(get_current_user)):
+    return debit_balance_service(username=claims["sub"], amount=body.amount)
+
+@router.delete("/delete", status_code=204)
+def delete_me(claims: dict = Depends(get_current_user)):
+    delete_user_service(username=claims["sub"])
+    return
