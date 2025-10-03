@@ -18,6 +18,8 @@ def _ensure_user_exists_by_username(username: str) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
+
 def _normalize_amount(amount: float) -> float:
     try:
         a = float(amount)
@@ -50,6 +52,13 @@ def create_profile_service(
 
 def get_me_service(*, username_sub: str) -> Dict[str, Any]:
     return _ensure_user_exists_by_username(username_sub)
+
+def get_user_by_username(username: str) -> Dict[str, Any]:
+
+    user = repo_find_by_username(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 def list_users_service(*, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     if limit < 0 or offset < 0:

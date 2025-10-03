@@ -6,6 +6,7 @@ from users.utils import get_current_user
 from users.service import (
     create_profile_service,
     get_me_service,
+    get_user_by_username,
     list_users_service,
     update_profile_service,
     credit_balance_service,
@@ -29,6 +30,19 @@ def create_profile(body: UserCreate):
 def get_me(claims: dict = Depends(get_current_user)):
     return get_me_service(username_sub=claims["sub"])
 
+@router.get("/{username}", response_model=UserPublic)
+def api_get_user_by_username(
+    username: str,
+    _: dict = Depends(get_current_user),   # ⬅️ bắt buộc phải đăng nhập/authorize
+):
+    """
+    GET /users/by-username/{username}
+    MSSV = username
+    """
+    return get_user_by_username(username)
+
+
+
 @router.get("/all", response_model=UserList)
 def list_users(
     _: dict = Depends(get_current_user),
@@ -39,18 +53,7 @@ def list_users(
     return {"items": items, "limit": limit, "offset": offset}
 
 
-# # router.py
-# @router.get("/all-public", response_model=UserList)
-# def list_users_public(
-#     limit: int = Query(100, ge=0, le=1000),
-#     offset: int = Query(0, ge=0),
-# ):
-#     rows = list_users_service(limit=limit, offset=offset)
-#     items = [
-#         {"username": r["username"], "name": r["name"], "created_at": r.get("created_at")}
-#         for r in rows
-#     ]
-#     return {"items": items, "limit": limit, "offset": offset}
+
 
 
 @router.put("/update", response_model=UserPublic)

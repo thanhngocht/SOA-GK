@@ -66,6 +66,7 @@ def find_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     )
     return _first_or_none(res.data)
 
+
 # ---------- Update ----------
 def update_user_profile(username: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not updates:
